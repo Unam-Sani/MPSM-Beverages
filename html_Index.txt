@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Apply background image and theme colors */
+        body {
+            background-image: url('/Prototype Drafts/Admin Prototype/bg2.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: linear-gradient(to left, white, orange);
+            color: #2c3e50;
+            padding-top: 20px;
+        }
+
+        .sidebar .profile {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .sidebar .profile img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            position: relative;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .sidebar ul li a {
+            color: #2c3e50;
+            text-decoration: none;
+            font-size: 18px;
+            transition: background 0.3s, border-radius 0.3s;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 50px;
+        }
+
+        .sidebar ul li a i {
+            margin-right: 10px;
+        }
+
+        .sidebar ul li a:hover {
+            background-color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            border-radius: 50px;
+        }
+
+        .sub-menu {
+            display: none;
+            position: absolute;
+            left: 100%;
+            top: 0;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .sidebar ul li:hover .sub-menu {
+            display: block;
+        }
+
+        .sub-menu li {
+            padding: 10px;
+        }
+
+        .sub-menu li a {
+            color: #2c3e50;
+            text-decoration: none;
+            display: block;
+            border-radius: 5px;
+            position: relative;/* Ensure the pseudo-element is positioned correctly */
+        }
+
+
+.sub-menu li a::after {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: orange; /* Orange underline */
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    transform: scaleX(0); /* Start hidden */
+    transition: transform 0.3s ease; /* Smooth transition */
+}
+
+.sub-menu li a:hover::after {
+    transform: scaleX(1); /* Show underline on hover */
+}
+
+.sub-menu li a:hover {
+    background-color: rgba(255, 165, 0, 0.3); /* Optional background change on hover */
+}
+
+        /* Navigation bar styles */
+        nav {
+            background: linear-gradient(to right, white, orange);
+            color: white;
+            padding: 15px;
+            position: fixed;
+            width: calc(100% - 250px);
+            left: 250px;
+            top: 0;
+            z-index: 1;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .search-bar {
+            padding: 10px;
+            border-radius: 20px;
+            border: none;
+            outline: none;
+            width: 200px;
+            margin-right: 15px;
+        }
+
+        .nav-right i {
+            color: white;
+            font-size: 18px;
+            margin-left: 15px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .nav-right i:hover {
+            color: #2980b9;
+        }
+
+        /* Main Content Overlay */
+        .main-content {
+            margin-left: 270px;
+            padding: 70px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: outset 2px orange;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 100px;
+            margin-bottom: 100px;
+            width: calc(100% - 500px);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .stats-cards {
+            display: flex;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 200px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .card i {
+            border: 2px solid;
+            border-radius: 50%;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .card .total-products i { color: #2980b9; border-color: #2980b9; }
+        .card .orders i { color: #e67e22; border-color: #e67e22; }
+        .card .total-stock i { color: #27ae60; border-color: #27ae60; }
+        .card .out-of-stock i { color: #e74c3c; border-color: #e74c3c; }
+
+        .charts-section {
+            display: flex;
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .chart {
+            width: 48%;
+            height: 400px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart h4 {
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 300px;
+        }
+
+        /* Notifications Section */
+        .notifications {
+            margin-top: 40px;
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .notification-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item input {
+            margin-right: 10px;
+        }
+
+        .notification-date {
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-left: auto;
+        }
+        .notification-controls {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.notification-controls .search-bar {
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    outline: none;
+    margin-right: 15px;
+    flex: 1; /* Make the search bar take available space */
+}
+
+.notification-controls .filter-icon,
+.notification-controls .sort-icon {
+    cursor: pointer;
+    margin-left: 10px;
+    color: #2980b9; /* Change icon color */
+}
+
+
+        .delete-button {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .delete-button:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="profile">
+            <img src="profile.jpg" alt="Profile Picture">
+            <h3>Welcome Administrator</h3>
+        </div>
+        <ul>
+            <li>
+                <a href="#overview" class="main-item">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard <i class="fas fa-chevron-down"></i>
+                </a>
+                <ul class="sub-menu">
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#analytical-summary">Analytical Summary</a></li>
+                    <li><a href="#notifications">Notifications</a></li>
+                    <li><a href="#">Calendar</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#" class="main-item">
+                    <i class="fas fa-archive"></i> Inventory <i class="fas fa-chevron-down"></i>
+                </a>
+                <ul class="sub-menu">
+                    <li><a href="#">Add Product</a></li>
+                    <li><a href="#">View Products</a></li>
+                    <li><a href="#">Stock Levels</a></li>
+                    <li><a href="#">Inventory Reports</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#" class="main-item">
+                    <i class="fas fa-receipt"></i> Orders <i class="fas fa-chevron-down"></i>
+                </a>
+                <ul class="sub-menu">
+                    <li><a href="#">Order History</a></li>
+                    <li><a href="#">Order Tracking</a></li>
+                    <li><a href="#">Manage Returns</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#" class="main-item">
+                    <i class="fas fa-file-invoice"></i> Purchase <i class="fas fa-chevron-down"></i>
+                </a>
+                <ul class="sub-menu">
+                    <li><a href="#">Create Purchase Order</a></li>
+                    <li><a href="#">Purchase History</a></li>
+                    <li><a href="#">Vendor List</a></li>
+                    <li><a href="#">Manage Invoices</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#" class="main-item">
+                    <i class="fas fa-chart-line"></i> Reporting <i class="fas fa-chevron-down"></i>
+                </a>
+                <ul class="sub-menu">
+                    <li><a href="#">Sales Report</a></li>
+                    <li><a href="#">Inventory Report</a></li>
+                    <li><a href="#">Financial Reports</a></li>
+                    <li><a href="#">Customer Reports</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#" class="main-item">
+                    <i class="fas fa-question-circle"></i> Support <i class="fas fa-chevron-down"></i>
+                </a>
+                <ul class="sub-menu">
+                    <li><a href="#">FAQ</a></li>
+                    <li><a href="#">Contact Support</a></li>
+                    <li><a href="#">User Guides</a></li>
+                    <li><a href="#">Feedback</a></li>
+                </ul>
+            </li>
+            <li>
+                <a href="#" class="main-item">
+                    <i class="fas fa-cog"></i> Settings <i class="fas fa-chevron-down"></i>
+                </a>
+                <ul class="sub-menu">
+                    <li><a href="#">User Settings</a></li>
+                    <li><a href="#">App Settings</a></li>
+                    <li><a href="#">Permissions</a></li>
+                    <li><a href="#">Notifications</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Navigation bar with search bar and icons -->
+    <nav>
+        <div class="nav-left">
+            <i class="fas fa-search"></i>
+            <input type="text" class="search-bar" placeholder="Search...">
+            <i class="fas fa-envelope"></i>
+            <i class="fas fa-cog"></i>
+            <i class="fas fa-bell"></i>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header" id="overview">
+            <h1>Inventory Management</h1>
+            <p>Welcome Administrator!</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <section class="stats-cards">
+            <div class="card total-products" style="background-color: #3498db; color: white;">
+                <i class="fas fa-box"></i>
+                <h3>Total Products</h3>
+                <p>5483</p>
+            </div>
+            <div class="card orders" style="background-color: #e67e22; color: white;">
+                <i class="fas fa-shopping-cart"></i>
+                <h3>Orders</h3>
+                <p>2859</p>
+            </div>
+            <div class="card total-stock" style="background-color: #27ae60; color: white;">
+                <i class="fas fa-warehouse"></i>
+                <h3>Total Stock</h3>
+                <p>5483</p>
+            </div>
+            <div class="card out-of-stock" style="background-color: #e74c3c; color: white;">
+                <i class="fas fa-exclamation-circle"></i>
+                <h3>Out of Stock</h3>
+                <p>38</p>
+            </div>
+        </section>
+
+        <!-- Analytical Summary Section -->
+        <section id="analytical-summary">
+            <h2>Analytical Summary</h2>
+            <section class="charts-section">
+                <div class="chart">
+                    <h4>Inventory Values</h4>
+                    <canvas id="inventoryChart"></canvas>
+                </div>
+                <div class="chart">
+                    <h4>Top Sales</h4>
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </section>
+            <section class="charts-section">
+                <div class="chart">
+                    <h4>Expenses vs Profit</h4>
+                    <canvas id="expenseProfitChart"></canvas>
+                </div>
+            </section>
+        </section>
+
+<!-- Notifications Section -->
+<div class="notifications">
+    <h4>Notifications</h4>
+    <div class="notification-controls">
+        <input type="text" id="notificationSearch" placeholder="Search notifications..." class="search-bar">
+        <i class="fas fa-filter filter-icon" onclick="filterNotifications()"></i>
+        <i class="fas fa-sort sort-icon" onclick="sortNotifications()"></i>
+    </div>
+    <div id="notificationList">
+        <div class="notification-item">
+            <input type="checkbox">
+            <span>Product X is running low in stock.</span>
+            <span class="notification-date">2024-09-30</span>
+        </div>
+        <div class="notification-item">
+            <input type="checkbox">
+            <span>New orders have been placed.</span>
+            <span class="notification-date">2024-09-29</span>
+        </div>
+        <div class="notification-item">
+            <input type="checkbox">
+            <span>Monthly inventory analysis is due.</span>
+            <span class="notification-date">2024-09-28</span>
+        </div>
+        <button class="delete-button">Delete Selected</button>
+    </div>
+</div>
+
+
+    <script>
+        // Inventory Chart
+        const ctx1 = document.getElementById('inventoryChart').getContext('2d');
+        const inventoryChart = new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: ['Water', 'Juices', 'Custom Beverages', 'Distillation Equipment'],
+                datasets: [{
+                    label: 'Inventory Values',
+                    data: [5000, 3000, 1500, 7000],
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)',
+                        'rgba(255, 159, 64, 0.6)',
+                        'rgba(255, 99, 132, 0.6)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Sales Chart
+        const ctx2 = document.getElementById('salesChart').getContext('2d');
+        const salesChart = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: ['January', 'February', 'March', 'April', 'May'],
+                datasets: [{
+                    label: 'Top Sales',
+                    data: [12000, 15000, 14000, 13000, 16000],
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Expense vs Profit Chart
+        const ctx3 = document.getElementById('expenseProfitChart').getContext('2d');
+        const expenseProfitChart = new Chart(ctx3, {
+            type: 'line',
+            data: {
+                labels: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Expenses',
+                    data: [30000, 40000, 35000, 45000, 50000, 55000, 60000],
+                    borderColor: 'red',
+                    fill: false
+                },
+                {
+                    label: 'Profit',
+                    data: [10000, 15000, 20000, 25000, 30000, 35000, 40000],
+                    borderColor: 'green',
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Months'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Amount (in Rands)'
+                        }
+                    }
+                },
+                maintainAspectRatio: false
+            }
+        });
+    </script>
+</body>
+
+<!-- Footer -->
+<footer>
+    &copy; 2024 Inventory Management System | All rights reserved
+</footer>
+
+</html>
+
+<script>
+
+// Create Expense vs Profit Chart
+const ctx = document.getElementById('expenseProfitChart').getContext('2d');
+const expenseProfitChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: ['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+            label: 'Expenses',
+            data: [30000, 40000, 35000, 45000, 50000, 55000, 60000],
+            borderColor: 'red',
+            fill: false
+        },
+        {
+            label: 'Profit',
+            data: [10000, 15000, 20000, 25000, 30000, 35000, 40000],
+            borderColor: 'green',
+            fill: false
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: 'Months'
+                }
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: 'Amount (in Rands)'
+                }
+            }
+        }
+    }
+});
+
+
+    // Sample notifications for demonstration
+    const notifications = [
+        { text: "Product X is running low in stock.", date: "2024-09-30" },
+        { text: "New orders have been placed.", date: "2024-09-29" },
+        { text: "Monthly inventory analysis is due.", date: "2024-09-28" },
+    ];
+
+    function displayNotifications(filteredNotifications) {
+        const notificationList = document.getElementById('notificationList');
+        notificationList.innerHTML = '';
+
+        filteredNotifications.forEach(notification => {
+            const item = document.createElement('div');
+            item.classList.add('notification-item');
+            item.innerHTML = `<input type="checkbox">
+                              <span>${notification.text}</span>
+                              <span class="notification-date">${notification.date}</span>`;
+            notificationList.appendChild(item);
+        });
+    }
+
+    function filterNotifications() {
+        const searchValue = document.getElementById('notificationSearch').value.toLowerCase();
+        const filtered = notifications.filter(notification => 
+            notification.text.toLowerCase().includes(searchValue)
+        );
+        displayNotifications(filtered);
+    }
+
+    function sortNotifications() {
+        notifications.sort((a, b) => new Date(b.date) - new Date(a.date));
+        displayNotifications(notifications);
+    }
+
+    // Initialize the notification display on page load
+    displayNotifications(notifications);
+
+</sript>

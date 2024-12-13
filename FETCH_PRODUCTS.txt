@@ -1,0 +1,107 @@
+<?php  
+// fetch_notifications.php
+
+// Check if a session is already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Include the database connection file
+include('db_connection.php');
+
+echo '<br>';
+// Log connection attempt
+error_log("\nAttempting to establish database connection.\n", 3, 'debug_log.txt');
+
+// Initialize the notifications array early to avoid undefined variable issues
+$notifications = [];
+
+// Check if the connection is open
+if (!$conn) {
+    // Log the connection error and terminate the script
+    error_log("\nConnection failed: " . mysqli_connect_error() . "\n", 3, 'debug_log.txt');
+    die("Connection failed: " . mysqli_connect_error());
+} else {
+    // Log successful connection
+    error_log("\nDatabase connection established.\n", 3, 'debug_log.txt');
+}
+
+// Prepare the SQL statement to call the stored procedure
+$sql = "CALL get_notifications()";
+
+// Execute the stored procedure
+if ($conn->multi_query($sql)) {
+    error_log("\nQuery executed successfully: $sql\n", 3, 'debug_log.txt');
+    // Move to the next result set if there are any pending results
+    while ($conn->more_results()) {
+        $conn->next_result();
+    }
+    
+    // After running the stored procedure, fetch the notifications
+    $select_notifications = "SELECT * FROM notifications ORDER BY created_at DESC"; // Adjust query as needed
+
+    if ($result = $conn->query($select_notifications)) {
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                // Append each notification to the notifications array
+                $notifications[] = [
+                    'title' => $row['notification_title'] ?? '',
+                    'message' => $row['notification_message'] ?? '',
+                    'created_at' => $row['created_at'] ?? '',
+                    'notification_id' => $row['notification_id'] ?? '',
+                    'read_status' => $row['read_status'] ?? 0
+                ];
+
+                // Log each notification for debugging
+                error_log("Fetched Notification - Title: " . htmlspecialchars($row['notification_title']) . 
+                          ", Message: " . htmlspecialchars($row['notification_message']) . 
+                          ", Created At: " . htmlspecialchars($row['created_at']) . "\n", 3, 'debug_log.txt');
+            }
+        } else {
+            // Log if no notifications are found
+            error_log("Query succeeded but returned no rows.\n", 3, 'debug_log.txt');
+        }
+
+        // Free the result set
+        $result->free();
+        error_log("Result set freed after query.\n", 3, 'debug_log.txt');
+    } else {
+        // Log if the SELECT query fails
+        error_log("Failed to fetch notifications: " . $conn->error . "\n", 3, 'debug_log.txt');
+    }
+} else {
+    // Log if the query execution failed
+    error_log("Query Failed: " . $conn->error . "\n", 3, 'debug_log.txt');
+    die("Failed to execute stored procedure. MySQL Error: " . $conn->error);
+}
+
+
+// Process deletion of notifications
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_notifications'])) {
+    $ids_to_delete = implode(',', array_map('intval', $_POST['delete_notifications']));
+    $delete_sql = "UPDATE notifications SET status = 'deleted' WHERE notification_id IN ($ids_to_delete)";
+    
+    if ($conn->query($delete_sql)) {
+        // Log successful deletion
+        error_log("Notifications marked as deleted: " . $ids_to_delete . "\n", 3, 'debug_log.txt');
+        // Refresh the notifications page after deletion
+        header("Location: notifications.php");
+        exit;
+    } else {
+        error_log("Deletion Failed: " . $conn->error . "\n", 3, 'debug_log.txt');
+    }
+}
+
+// Count the number of notifications fetched
+$notification_count = count($notifications);
+
+// Debugging: Log the number of notifications fetched
+error_log("Number of notifications fetched: " . $notification_count . "\n", 3, 'debug_log.txt');
+
+// Store the notifications and count in session variables
+$_SESSION['notifications'] = $notifications;
+$_SESSION['notification_count'] = $notification_count;
+
+// Log when the script finishes execution
+error_log("fetch_notifications.php script finished execution.\n", 3, 'debug_log.txt');
+?>
